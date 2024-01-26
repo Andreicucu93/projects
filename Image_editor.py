@@ -7,10 +7,12 @@ import customtkinter
 
 
 root = customtkinter.CTk()
-root.title("Imaging - file editor (v2624.0523")
+root.title("Imaging - file editor (v.012624)")
 root.geometry("500x480") #width x height
 root.minsize(height=480, width=500)
 root.maxsize(height=480, width=500)
+customtkinter.set_appearance_mode("Dark")  # or "Light"
+
 
 extension_type = StringVar()
 extension_type.set(".jpg")
@@ -58,7 +60,7 @@ folder_path = StringVar()
 label = customtkinter.CTkLabel(root, text="Select the location containing images:")
 label.pack(pady=(10, 10))
 
-select_files_frame = customtkinter.CTkFrame(root, width=450)
+select_files_frame = customtkinter.CTkFrame(root, width=450, bg_color='#242424')
 select_files_frame.pack()
 
 entry = customtkinter.CTkEntry(select_files_frame, textvariable=folder_path)
@@ -67,13 +69,14 @@ entry.grid(row=0, column=0, padx=10)
 browse = customtkinter.CTkButton(select_files_frame, text="Browse", command=browse_folder)
 browse.grid(row=0, column=1)
 
-selectedFiles_label = customtkinter.CTkLabel(root, text="Paths selected 🡻")
-selectedFiles_label.pack()
+selectedFiles_label = customtkinter.CTkLabel(root, text="Inner paths selected 🡻\n(If applicable)")
+selectedFiles_label.pack(pady=(5, 5))
 
 listbox = Listbox(root, width=80)
 listbox.pack()
 
-width_label = customtkinter.CTkLabel(root, text="🡻 Enter new size for loaded images (batch resize)")
+width_label = customtkinter.CTkLabel(root, text="🡻 Enter new size for loaded images (batch resize)\n"
+                                                "350 = standard")
 width_label.pack(pady=(15, 5))
 
 resize_frame = customtkinter.CTkFrame(root, width=200, height=20, fg_color="#242424")
