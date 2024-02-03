@@ -1,0 +1,3 @@
+{
+    "script": "robocopy E:\\m D:\\m /COPY:DT /W:15 /R:10 /E /XO"
+}
