@@ -14,6 +14,7 @@ from PIL import Image, ImageTk
 import sys
 import win32com.client as win32
 import threading
+from functools import partial
 
 
 #To be compileable..
@@ -84,6 +85,15 @@ def show_temporary_message(message, text_color="black"):  # Default color is bla
     root.after(3000, msg_label.destroy)  # Message will disappear after 3000 milliseconds (3 seconds)
 
 
+def normalize_path(path):
+    """Normalize a file path to use the correct separators and ensure it's absolute."""
+    normalized_path = os.path.normpath(path.strip("{}").strip())
+    if not os.path.isabs(normalized_path):
+        # Convert to absolute path if not already
+        normalized_path = os.path.abspath(normalized_path)
+    return normalized_path
+
+
 def rename_file_drag_drop(suffix):
     def inner(event):
         selected_item = tree.focus()
@@ -105,12 +115,16 @@ def rename_file_drag_drop(suffix):
         try:
             os.rename(file_path, new_file_path)
             show_popup_message(f"File renamed to {new_file_name}", 1000)
+            # Update the tree view item to reflect the 'Dropped' status
+            tree.item(selected_item, tags=('dropped',))
+            tree.set(selected_item, column="#1", value="        Dropped")  # Assuming first column is the status
             return True
         except Exception as e:
             show_popup_message("Error during renaming.", 1000)
             return False
 
     return inner
+
 
 
 def load_from_excel():
@@ -138,7 +152,13 @@ def update_header_count():
     for child in tree.get_children():
         image_status = tree.set(child, 'Image status')
         count_loaded += image_status.count("📦")
+    # Correctly display the count of packed items in the "Image status" column header
     tree.heading("Image status", text=f"Image status ({count_loaded})")
+
+    # Calculate the total number of items for the "Name" column header
+    count_total_items = len(tree.get_children())  # Get the total number of items in the tree
+    tree.heading("Name", text=f"Name ({count_total_items})")  # Update "Name" column header with total item count
+
 
 
 def on_delete_key(event):
@@ -172,28 +192,29 @@ def on_treeview_click(event):
 
 def export_to_excel():
     global current_date
-    # Count the number of loaded items
+    # Count the number of items with "📦"
     count_loaded = sum("📦" in tree.set(child, 'Image status') for child in tree.get_children())
+    # Total number of items isn't needed in export but ensure the logic here matches what you display
 
     data = []
     for item_id in tree.get_children():
         item = tree.item(item_id, 'values')
         data.append(item)
     if data:
-        # Create the DataFrame with the dynamic column name
-        df = pd.DataFrame(data, columns=["Image status (" + str(count_loaded) + " loaded)", "ID",
-                                         "Name", "MC_RPL_UPC", "Package Type", "File Name"])
+        # Keep column names consistent, without dynamically changing them based on counts
+        df = pd.DataFrame(data, columns=["Image status", "ID", "Name", "MC_RPL_UPC", "Package Type", "File Name"])
         # Generate filename with current date
-        current_date = datetime.datetime.now().strftime("%Y-%m-%d")  # Format the date
-        default_filename = f"Imaging {current_date}.xlsx"  # Default filename "Imaging YYYY-MM-DD.xlsx"
+        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
+        default_filename = f"Imaging {current_date}.xlsx"
 
         file_path = fd.asksaveasfilename(defaultextension='.xlsx',
-                                         initialfile=default_filename,  # Use the generated filename as the default
+                                         initialfile=default_filename,
                                          filetypes=[("Excel Files", "*.xlsx")],
                                          title="Save the File")
         if file_path:
             df.to_excel(file_path, index=False)
             messagebox.showinfo("Success", "Data exported successfully")
+
 
 
 def rename_selected_file(suffix):
@@ -223,7 +244,7 @@ def clear_records():
         tree.delete(i)
     update_header_count()
 
-
+#aici
 def show_popup_message(message, duration=2000):
     popup = tk.Toplevel(root)
     popup.transient(root)  # Make the popup a transient window of the main app
@@ -239,7 +260,7 @@ def show_popup_message(message, duration=2000):
     popup.geometry(f"{width}x{height}+{x}+{y}")
 
     # Add a label with the message
-    message_label = tk.Label(popup, text=message, bg='#525c95')
+    message_label = customtkinter.CTkLabel(popup, text=message, bg_color='#525c95')
     message_label.pack(expand=True, fill='both', pady=10)
 
     popup.lift()  # Bring the popup above other windows
@@ -537,7 +558,6 @@ def main():
     fetch_frame = customtkinter.CTkFrame(root, fg_color="#2c2e42")
     fetch_frame.grid(row=1, column=0, padx=10, pady=10, sticky='ew')
 
-
     light_mode_image = Image.open(resource_path("discover_button.png"))
     guide_image = Image.open(resource_path("instructions.png"))
     guide_image_tk = ImageTk.PhotoImage(guide_image)
@@ -567,12 +587,12 @@ def main():
     batch_filter_frame = customtkinter.CTkFrame(root, height=47, fg_color="#2c2e42")
     batch_filter_frame.grid(row=2, column=0, padx=10, sticky='ew')
 
-    batch_filter_by_id_button = customtkinter.CTkButton(batch_filter_frame, text="Batch Filter by ID",
+    batch_filter_by_id_button = customtkinter.CTkButton(batch_filter_frame, text="ID - Filter",
                                                     fg_color='SlateBlue2', hover_color='SlateBlue3',
                                                         command=lambda: batch_filter_window("ID"))
     batch_filter_by_id_button.grid(row=1, column=1, padx=10, pady=5)
 
-    batch_filter_by_mc_button = customtkinter.CTkButton(batch_filter_frame, text="Batch Filter by MC RPL UPC",
+    batch_filter_by_mc_button = customtkinter.CTkButton(batch_filter_frame, text="MC RPL UPC - Filter",
                fg_color='SlateBlue2', hover_color='SlateBlue3', command=lambda: batch_filter_window("MC RPL UPC"))
     batch_filter_by_mc_button.grid(row=1, column=2, padx=10, pady=5)
 
@@ -587,6 +607,7 @@ def main():
 
     # Configure tags for different statuses
     tree.tag_configure('       ----------', foreground='gray')
+    tree.tag_configure('dropped', background='#90EE90')
     tree.grid(row=7, column=0, padx=10, pady=10)
     tree.heading("Image status", text="Image status", command=lambda: treeview_sort_column(tree, "Image status", False))
     tree.column("Image status", width=105)
@@ -625,7 +646,7 @@ def main():
                                           , fg_color='SpringGreen4', hover_color='#04aa56')
     load_button.grid(row=1, column=1, pady=10, padx=(10, 0))  # Adjust grid position as needed
     pack_files_button = customtkinter.CTkButton(bottom_frame_secondary, text="Pack files", command=pack_files_in_folders,
-                                                fg_color='DarkGoldenrod3', hover_color='DarkGoldenrod2')
+                                                fg_color='Goldenrod3', hover_color='DarkGoldenrod2')
     pack_files_button.grid(row=2, column=0)
 
     current_date = datetime.datetime.now().strftime("%Y-%m-%d")
@@ -653,24 +674,34 @@ def main():
     root.rowconfigure(11, weight=1)  # Allow the row to expand
     root.columnconfigure(0, weight=1)  # Allow the column to expand
     root.rowconfigure(11, weight=1)
+    # Example setup of labels (make sure this part already exists in your code)
     front_label = tk.Label(second_bottom_frame, image=front_drop_tk, bg="RosyBrown2", height=40, width=40)
-    front_label.grid(row=0, column=0, padx=10, pady=10, sticky='nsew') #Drag and drop for front rename
+    front_label.grid(row=0, column=0, padx=10, pady=10, sticky='nsew')
 
     side_label = tk.Label(second_bottom_frame, image=side_drop_tk, bg="RosyBrown2", height=40, width=40)
-    side_label.grid(row=0, column=1, padx=10, pady=10, sticky='nsew') #Drag and drop for side rename
+    side_label.grid(row=0, column=1, padx=10, pady=10, sticky='nsew')
 
     top_label = tk.Label(second_bottom_frame, image=top_drop_tk, bg="RosyBrown2", height=40, width=40)
-    top_label.grid(row=0, column=2, padx=10, pady=10, sticky='nsew') #Drag and drop for top rename
+    top_label.grid(row=0, column=2, padx=10, pady=10, sticky='nsew')
 
-    second_bottom_frame.columnconfigure((0, 1, 2), weight=1)  # Allow columns to expand
+    # Assuming the rename_file_drag_drop function is defined with two parameters: tree and suffix
+    # and the labels (front_label, side_label, top_label) are already defined
+
+    suffixes = ['.1', '.2', '.3']  # Define the suffixes for each label
+
+    # Assuming front_label, side_label, top_label are defined as tkinter.Label or customtkinter.CTkLabel
+    for label, suffix in [(front_label, '.1'), (side_label, '.2'), (top_label, '.3')]:
+        label.drop_target_register(DND_FILES)
+        label.dnd_bind('<<Drop>>', lambda e, s=suffix: rename_file_drag_drop(s)(e))
+
+        second_bottom_frame.columnconfigure((0, 1, 2), weight=1)  # Allow columns to expand
     second_bottom_frame.rowconfigure(0, weight=1)
     status_label = customtkinter.CTkLabel(root, text="", text_color="green")
     status_label.grid(row=12, column=0)
     status_label.grid_remove()  # Initially hide the label
     # Bind drag and drop events
-    for CTkLabel, suffix in [(front_label, '.1'), (side_label, '.2'), (top_label, '.3')]:
-        CTkLabel.drop_target_register(DND_FILES)
-        CTkLabel.dnd_bind('<<Drop>>', lambda e, s=suffix: rename_file_drag_drop(s)(e))
+    # Assuming 'tree' is defined somewhere above this in your code and you want to use it here as well
+
     msg_label = customtkinter.CTkLabel(root, text="", text_color="green")
     msg_label.grid(row=13, column=0)
 
