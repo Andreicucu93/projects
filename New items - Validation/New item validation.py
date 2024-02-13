@@ -10,9 +10,8 @@ import urllib.request
 import webbrowser
 import customtkinter
 
-
-#versionControl: 02072014
-#Theme: config
+# versionControl: 02122024
+# Theme: config
 customtkinter.set_appearance_mode("dark")
 
 config_url = 'https://raw.githubusercontent.com/questionmarkdude/questionmark/main/config.json'
@@ -68,8 +67,8 @@ class App:
         self.treeview_frame.columnconfigure(0, weight=1)  # Add this line to make the treeview expand horizontally
 
         self.treeview = ButtonedTreeview(self.treeview_frame,  # Use ButtonedTreeview instead of ttk.Treeview
-                                 columns=('check', 'name', 'UPC', '12DigitUPC', 'NameCheck', 'Feedback'),
-                                 show='headings', selectmode='browse')
+                                         columns=('check', 'name', 'UPC', '12DigitUPC', 'NameCheck', 'Feedback'),
+                                         show='headings', selectmode='browse')
 
         self.treeview.column('check', width=10, anchor=tk.CENTER)
 
@@ -121,7 +120,8 @@ class App:
         self.copy_button.grid(row=0, column=4, padx=5, pady=5)
 
         self.copy_brand_family_button = customtkinter.CTkButton(self.button_frame, text="Clipboard: Brand Family",
-                                  fg_color='#3b91a6', hover_color='#1a819a', command=self.copy_brand_family)
+                                                                fg_color='#3b91a6', hover_color='#1a819a',
+                                                                command=self.copy_brand_family)
         self.copy_brand_family_button.grid(row=0, column=5, padx=5, pady=5)
 
         self.copy_name_button = customtkinter.CTkButton(self.button_frame, text="Clipboard: Name", fg_color='#3b91a6',
@@ -132,15 +132,18 @@ class App:
                                                         hover_color='#1a819a', command=self.copy_upc_to_clipboard)
         self.clipboard_button.grid(row=0, column=7, padx=5, pady=5)
 
-        self.clipboard_feedback_button = customtkinter.CTkButton(self.button_frame, text='Clipboard: Feedback', fg_color='#3b91a6',
-                                                                 hover_color='#1a819a', command=self.copy_feedback_to_clipboard)
+        self.clipboard_feedback_button = customtkinter.CTkButton(self.button_frame, text='Clipboard: Feedback',
+                                                                 fg_color='#3b91a6',
+                                                                 hover_color='#1a819a',
+                                                                 command=self.copy_feedback_to_clipboard)
         self.clipboard_feedback_button.grid(row=0, column=8, padx=5, pady=5)
 
         self.feedback_entry = tk.Entry(master, width=9)
         self.feedback_entry.bind("<FocusOut>", self.hide_feedback_entry)
         self.feedback_entry.bind("<Return>", self.on_feedback_edit)
 
-        self.add_to_database_button = customtkinter.CTkButton(self.button_frame, text='Add to database', command=self.add_to_database)
+        self.add_to_database_button = customtkinter.CTkButton(self.button_frame, text='Add to database',
+                                                              command=self.add_to_database)
         self.add_to_database_button.grid(row=0, column=9, padx=5, pady=5)
 
         self.check_upc_button = customtkinter.CTkButton(self.button_frame, text='GS1 Check', fg_color='#7436d2',
@@ -210,7 +213,8 @@ class App:
         self.accdb_data = None
         self.results = {}  # Add a dictionary to store results
 
-        self.treeview.tag_bind('checkbox', '<Button-1>', self.on_mouse_click)  # Bind mouse click event to 'checkbox' tag
+        self.treeview.tag_bind('checkbox', '<Button-1>',
+                               self.on_mouse_click)  # Bind mouse click event to 'checkbox' tag
 
     def toggle_button(self, button):
         new_state = 'X' if button['state'] == 'O' else 'O'
@@ -230,7 +234,6 @@ class App:
         # Rearrange items in the treeview based on their sorted order
         for index, (name, item_id) in enumerate(items):
             self.treeview.move(item_id, '', index)
-
 
     def on_mouse_click(self, event):
         item = self.treeview.identify_row(event.y)
@@ -342,7 +345,6 @@ class App:
             webbrowser.open(url)
         else:
             messagebox.showerror("Error", "No UPC found for selected item!")
-
 
     def copy_brand_family(self):
         selected_item: Tuple = self.treeview.selection()
@@ -459,7 +461,6 @@ class App:
                 # Assume you have a unique ID for each row or generate one
                 unique_id = row['ID']  # Or use `str(uuid.uuid4())` to generate a UUID
                 self.treeview.insert('', 'end', iid=unique_id, values=(...))
-
 
             for index, row in items_to_add.iterrows():
                 query = f''' 
@@ -649,7 +650,7 @@ class App:
             except Exception as e:
                 print('Error loading ACCDB file:', e)
                 self.load_accdb_button.configure(text='Error loading DB', fg_color='red')
-    
+
     def copy_12_digit_upc_to_clipboard(self, index):
         try:
             twelve_digit_upc = self.upc_dict[index]
