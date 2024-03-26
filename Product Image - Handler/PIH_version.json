@@ -1,5 +1,5 @@
 {
-  "latest_version": "2.1",
-  "download_url": "https://molsoncoors.sharepoint.com/:f:/s/US-GRP-S4733/Eu2H8cSgoEpDhFGiWZ2F0Q4B3gqLxxhoXkpC4VAoRn2GKA?e=JQyJ0A",
-  "update_details": "Filter bug - corrected; Transform: Save (overwrite) file to PNG."
+  "latest_version": "2.3",
+  "download_url": "https://we.tl/t-WEZE2eCy7u",
+  "update_details": "Added side cropping; fixed count for filtered items."
 }
